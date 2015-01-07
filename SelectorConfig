@@ -1,0 +1,18 @@
+ final public class SelectorConfig {
+
+    // 读缓冲区大小
+    final static int READ_BUFFER_SIZE = 64 * 1024;
+    // 写缓冲区大小
+    final static int WRITE_BUFFER_SIZE = 64 * 1024;
+    // 缓冲池对象统计
+    final static int HELPER_BUFFER_COUNT = 16;
+    // 缓冲区缓冲池大小
+    final static int HELPER_BUFFER_SIZE = 64 * 1024;
+    // 最大预发送大小
+    final static int MAX_SEND_PER_PASS = 10;
+    //NIO选择器线程休眠时间
+    final static int SLEEP_TIME = 10;
+    // TCP_NODELAY 设置
+    final static boolean TCP_NODELAY = false;
+    
+}
