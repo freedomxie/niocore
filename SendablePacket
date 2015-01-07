@@ -1,0 +1,84 @@
+public abstract class SendablePacket<T extends Client<?>> extends AbstractPacket<T> {
+
+	/**
+	 * 写入字节 8bit
+	 * 
+	 * @param data
+	 */
+	protected final void writeByte(final int data) {
+		_buf.put((byte) data);
+	}
+
+	/**
+	 * 写入双精度数 64bit
+	 * 
+	 * @param data
+	 */
+	protected final void writeDouble(final double value) {
+		_buf.putDouble(value);
+	}
+
+	/**
+	 * 写入单精度数 32bit
+	 * 
+	 * @param data
+	 */
+	protected final void writeFloat(final float value) {
+		_buf.putFloat(value);
+	}
+
+	/**
+	 * 写入短整型 16bit
+	 * 
+	 * @param data
+	 */
+	protected final void writeShort(final int value) {
+		_buf.putShort((short) value);
+	}
+
+	/**
+	 * 写入整型 32bit
+	 * 
+	 * @param data
+	 */
+	protected final void writeInt(final int value) {
+		_buf.putInt(value);
+	}
+
+	/**
+	 * 写入长整型 64bit
+	 * 
+	 * @param data
+	 */
+	protected final void writeLong(final long value) {
+		_buf.putLong(value);
+	}
+
+	/**
+	 * 写入字节数组
+	 * 
+	 * @param data
+	 */
+	protected final void writeByteArray(final byte[] data) {
+		_buf.put(data);
+	}
+
+	/**
+	 * 写入字符串
+	 * 
+	 * @param data
+	 */
+	protected final void writeString(final String text) {
+		if (text != null) {
+			final int len = text.length();
+			for (int i = 0; i < len; i++) {
+				_buf.putChar(text.charAt(i));
+			}
+		}
+
+		_buf.putChar('\0');
+	}
+
+	protected abstract void write();
+
+}
