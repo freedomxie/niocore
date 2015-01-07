@@ -1,0 +1,102 @@
+public abstract class ReceivablePacket<T extends Client<?>> extends AbstractPacket<T> implements Runnable {
+
+    protected ReceivablePacket() {
+    }
+
+    protected abstract boolean read();
+
+    @Override
+    public abstract void run();
+
+    /**
+     * 读取字节数组
+     *
+     * @param dst
+     */
+    protected final void readByteArray(final byte[] dst) {
+        _buf.get(dst);
+    }
+
+    /**
+     * 读取字节数组
+     *
+     * @param dst
+     * @param offset
+     * @param len
+     */
+    protected final void readByteArray(final byte[] dst, final int offset, final int len) {
+        _buf.get(dst, offset, len);
+    }
+
+    /**
+     * 读取字节
+     *
+     * @return
+     */
+    protected final int readByte() {
+        return _buf.get() & 0xFF;
+    }
+
+    /**
+     * 读取短整形
+     *
+     * @return
+     */
+    protected final int readShort() {
+        return _buf.getShort() & 0xFFFF;
+    }
+
+    /**
+     * 读取整形
+     *
+     * @return
+     */
+    protected final int readInt() {
+        return _buf.getInt();
+    }
+
+    /**
+     * 读取长整形
+     *
+     * @return
+     */
+    protected final long readLong() {
+        return _buf.getLong();
+    }
+
+    /**
+     * 读取双精度数
+     *
+     * @return
+     */
+    protected final double readDouble() {
+        return _buf.getDouble();
+    }
+
+    /**
+     * 读取双精度数
+     *
+     * @return
+     */
+    protected final double readFloat() {
+        return _buf.getFloat();
+    }
+
+    /**
+     * 读取字符串
+     *
+     * @return
+     */
+    protected final String readString() {
+        StringBuilder _sbuf = new StringBuilder(64);
+        try {
+            char ch;
+            while ((ch = _buf.getChar()) != 0) {
+                _sbuf.append(ch);
+            }
+            return _sbuf.toString();
+        } finally {
+            _sbuf = null;
+        }
+    }
+}
