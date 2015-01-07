@@ -1,0 +1,15 @@
+import java.nio.ByteBuffer;
+
+/** 
+ * @author freedom.xie
+ * @description 传输数据包定义
+ */
+public abstract class AbstractPacket<T extends Client<?>> implements Cloneable {
+
+    protected ByteBuffer _buf;
+    protected T _client;
+
+    public final T getClient() {
+        return _client;
+    }
+}
