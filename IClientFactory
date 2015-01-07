@@ -1,0 +1,4 @@
+public interface IClientFactory<T extends Client<?>> {
+
+    public T create(final Connection<T> con);
+}
