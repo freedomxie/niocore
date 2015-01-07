@@ -1,0 +1,169 @@
+
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
+import java.util.Iterator;
+import java.util.logging.Logger;
+
+/**
+ * 
+ * @author freedom.xie
+ * @description 处理连接选择器
+ */
+public final class SelectorThread<T extends Client<?>> extends Thread {
+	protected static final Logger _log = Logger.getLogger(Connection.class.getName());
+	// NIO Selector
+	private final Selector _selector;
+	private final RWSelectorThread<T> _rwSelectors;
+	private final IClientFactory<T> _clientFactory;
+	private final IAcceptFilter _acceptFilter;
+	private final SelectorConfig selectorConfig;
+	private boolean TCP_NODELAY;
+	private final int SLEEP_TIME;
+	private boolean _shutdown;
+
+	public SelectorThread(final SelectorConfig config,final IExecutor<T> executor, final IPacketHandler<T> packetHandler,
+			final IClientFactory<T> clientFactory, final IAcceptFilter acceptFilter) throws IOException {
+		super.setName("SelectorThread-" + super.getId());
+		this.TCP_NODELAY = SelectorConfig.TCP_NODELAY;
+		this._selector = Selector.open();
+
+		this.SLEEP_TIME = SelectorConfig.SLEEP_TIME;
+		this._shutdown = false;
+		this._acceptFilter = acceptFilter;
+		this._clientFactory = clientFactory;
+		this.selectorConfig = config;
+		this._rwSelectors = new RWSelectorThread<T>(executor, packetHandler);
+
+	}
+
+	public final void openServerSocket(InetAddress address, int tcpPort) throws IOException {
+		ServerSocketChannel selectable = ServerSocketChannel.open();
+		selectable.configureBlocking(false);
+
+		ServerSocket ss = selectable.socket();
+
+		if (address == null) {
+			ss.bind(new InetSocketAddress(tcpPort));
+		} else {
+			ss.bind(new InetSocketAddress(address, tcpPort));
+		}
+
+		selectable.register(_selector, SelectionKey.OP_ACCEPT);
+
+		_rwSelectors.start();
+
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public final void run() {
+		int selectedKeysCount = 0;
+
+		SelectionKey key;
+		Connection<T> con;
+
+		Iterator<SelectionKey> selectedKeys;
+
+		while (!_shutdown) {
+			try {
+				selectedKeysCount = _selector.select(SLEEP_TIME);
+			} catch (IOException e) {
+				e.printStackTrace();
+				// _log.log(Level.SEVERE, "ignore", e);
+			}
+
+			if (selectedKeysCount > 0) {
+				selectedKeys = _selector.selectedKeys().iterator();
+				while (selectedKeys.hasNext()) {
+					key = selectedKeys.next();
+					selectedKeys.remove();
+					con = (Connection<T>) key.attachment();
+					try {
+						switch (key.readyOps()) {
+						case SelectionKey.OP_CONNECT:
+							finishConnection(key, con);
+							break;
+						case SelectionKey.OP_ACCEPT:
+							acceptConnection(key, con);
+							break;
+						}
+					} catch (Exception ex) {
+						ex.printStackTrace();
+						// _log.log(Level.SEVERE, "ignore", ex);
+					}
+				}
+			}
+		}
+	}
+
+	private final void finishConnection(final SelectionKey key, final Connection<T> con) {
+		try {
+			((SocketChannel) key.channel()).finishConnect();
+		} catch (IOException e) {
+			con.getClient().onForcedDisconnection();
+			closeConnectionImpl(key, con);
+			e.printStackTrace();
+		}
+
+		// key might have been invalidated on finishConnect()
+		if (key.isValid()) {
+			key.interestOps(key.interestOps() | SelectionKey.OP_READ);
+			key.interestOps(key.interestOps() & ~SelectionKey.OP_CONNECT);
+		}
+	}
+
+	private final void acceptConnection(final SelectionKey key, Connection<T> con) {
+		ServerSocketChannel ssc = (ServerSocketChannel) key.channel();
+		SocketChannel sc;
+		try {
+			while ((sc = ssc.accept()) != null) {
+				if ((_acceptFilter == null) || _acceptFilter.accept(sc)) {
+					sc.configureBlocking(false);
+					SelectionKey clientKey = sc.register(_rwSelectors.getSelector(), SelectionKey.OP_READ);
+					con = new Connection<T>(_rwSelectors, sc.socket(), clientKey, TCP_NODELAY);
+					con.setClient(_clientFactory.create(con));
+					clientKey.attach(con);
+					con.getClient().onConnection();
+				} else {
+					sc.socket().close();
+				}
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+			// _log.log(Level.SEVERE, "ignore", e);
+		}
+	}
+
+	public final void shutdown() {
+		_shutdown = true;
+	}
+
+	private final void closeConnectionImpl(final SelectionKey key, final Connection<T> con) {
+		try {
+			// notify connection
+			con.getClient().onDisconnection();
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			// _log.log(Level.SEVERE, "ignore ,must catch Exception", ex);
+		} finally {
+			try {
+				// close socket and the SocketChannel
+				con.close();
+			} catch (IOException e) {
+				// _log.log(Level.SEVERE, "ignore, we are closing anyway", e);
+			} finally {
+				con.releaseBuffers();
+				// clear attachment
+				key.attach(null);
+				// cancel key
+				key.cancel();
+			}
+		}
+	}
+}
