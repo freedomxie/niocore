@@ -1,0 +1,4 @@
+public interface IExecutor<T extends Client<?>> {
+
+    public void execute(ReceivablePacket<T> packet);
+}
