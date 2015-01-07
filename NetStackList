@@ -1,0 +1,75 @@
+ublic final class NetStackList<E> {
+
+    private final Node start = new Node();
+    private final NodeBuf buf = new NodeBuf();
+    private Node end = new Node();
+    private int size;
+    public NetStackList() {
+        clear();
+    }
+
+    final int size() {
+    	return this.size;
+    }
+    
+    final void addLast(final E elem) {
+        final Node newEndNode = buf.removeFirst();
+        end.value = elem;
+        end.next = newEndNode;
+        end = newEndNode;
+        size ++;
+    }
+
+    final E removeFirst() {
+        final Node old = start.next;
+        final E value = old.value;
+        start.next = old.next;
+        buf.addLast(old);
+        size --;
+        return value;
+    }
+
+    final E getFirst() {
+    	return start.next.value;
+    }
+    
+    final boolean isEmpty() {
+        return start.next == end;
+    }
+
+    final void clear() {
+        start.next = end;
+        this.size = 0;
+    }
+
+    final class Node {
+        protected Node next;
+        protected E value;
+    }
+
+    private final class NodeBuf {
+
+        private final Node start = new Node();
+        private Node end = new Node();
+
+        NodeBuf() {
+            start.next = end;
+        }
+
+        final void addLast(final Node node) {
+            node.next = null;
+            node.value = null;
+            end.next = node;
+            end = node;
+        }
+
+        final Node removeFirst() {
+            if (start.next == end) {
+                return new Node();
+            }
+            final Node old = start.next;
+            start.next = old.next;
+            return old;
+        }
+    }
+}
