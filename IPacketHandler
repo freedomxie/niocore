@@ -1,0 +1,10 @@
+import java.nio.ByteBuffer;
+
+/**
+ * @author freedom.xie
+ * @description 数据包处理器接口定义
+ */
+public interface IPacketHandler<T extends Client<?>> {
+
+    public ReceivablePacket<T> handlePacket(ByteBuffer buf, T client);
+}
