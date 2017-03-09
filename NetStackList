@@ -1,4 +1,4 @@
-ublic final class NetStackList<E> {
+public final class NetStackList<E> {
 
     private final Node start = new Node();
     private final NodeBuf buf = new NodeBuf();
